@@ -122,6 +122,15 @@ class NimAI():
         """
         self.q[(tuple(state), action)] = old_q + self.alpha * ((reward + future_rewards) - old_q)
 
+
+    def available_actions(self, state):
+        actions = set()
+        for i, pile in enumerate(state):
+            for j in range(1, pile + 1):
+                actions.add((i, j))
+        return actions
+
+
     def best_future_reward(self, state):
         """
         Given a state `state`, consider all possible `(state, action)`
@@ -132,18 +141,15 @@ class NimAI():
         Q-value in `self.q`. If there are no available actions in
         `state`, return 0.
         """
-        best_qs = []
-
-        actions = set()
-        for i, pile in enumerate(state):
-            for j in range(1, pile + 1):
-                actions.add((i, j))
+        actions = self.available_actions(state)
         
+        if len(actions) == 0:
+            return 0
+
+        best_qs = []
         for action in actions:
             best_qs.append(self.get_q_value(state, action))
 
-        if len(best_qs) == 0:
-            return 0
         return max(best_qs)
 
 
@@ -162,7 +168,21 @@ class NimAI():
         If multiple actions have the same Q-value, any of those
         options is an acceptable return value.
         """
-        raise NotImplementedError
+        actions = self.available_actions(state)
+        
+        actions_with_q = []
+        for action in actions:
+            actions_with_q.append((action, self.get_q_value(state,action)))
+
+        sorted_actions = sorted(actions_with_q, key=lambda x: x[1], reverse=True)
+        if not epsilon:
+            return sorted_actions[0][0]
+        else:
+            choices = [random.choice(list(actions)), sorted_actions[0][0]]
+            weights = [self.epsilon, 1-self.epsilon]
+            return random.choices(choices, weights, k=1)[0]
+
+
 
 
 def train(n):
